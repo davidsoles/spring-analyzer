@@ -1,6 +1,7 @@
 package io.github.davidsoles.springanalyzer.events;
 
 import io.github.davidsoles.springanalyzer.common.ScanOptions;
+import io.github.davidsoles.springanalyzer.common.SourceFiles;
 import io.github.davidsoles.springanalyzer.common.SourceIndex;
 
 import com.github.javaparser.ast.CompilationUnit;
@@ -531,10 +532,7 @@ public final class EventExtractor {
     }
 
     private String displayFile(Path file) {
-        if (options.absolutePaths()) {
-            return file.toString().replace('\\', '/');
-        }
-        return root.relativize(file).toString().replace('\\', '/');
+        return SourceFiles.display(root, options, file);
     }
 
     private static int methodLine(MethodDeclaration method) {

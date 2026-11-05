@@ -1,11 +1,11 @@
 package io.github.davidsoles.springanalyzer;
 
 import io.github.davidsoles.springanalyzer.common.OutputFormat;
+import io.github.davidsoles.springanalyzer.common.ProjectScanner;
 import io.github.davidsoles.springanalyzer.common.Renderer;
 import io.github.davidsoles.springanalyzer.common.ScanOptions;
 import io.github.davidsoles.springanalyzer.common.ScanResult;
 import io.github.davidsoles.springanalyzer.common.Version;
-import io.github.davidsoles.springanalyzer.endpoints.EndpointScanner;
 
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,7 @@ public final class Main {
         }
 
         try {
-            ScanResult result = new EndpointScanner().scan(
+            ScanResult result = new ProjectScanner().scan(
                     cli.root(),
                     new ScanOptions(
                             cli.includeTests(),

@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Event graph output with publishers and listeners grouped by event type.
 - `--events` table and CSV output.
 - JSON schema version 2 with an `events` array.
+- Feature-based package layout: `common`, `endpoints`, and `events`; the root
+  package now contains only `Main`.
+
 
 ## [1.0.0] - 2026-11-04
 

@@ -1,12 +1,13 @@
 package io.github.davidsoles.springanalyzer;
 
 import io.github.davidsoles.springanalyzer.common.OutputFormat;
+import io.github.davidsoles.springanalyzer.common.ProjectScanner;
 import io.github.davidsoles.springanalyzer.common.Renderer;
 import io.github.davidsoles.springanalyzer.common.ScanOptions;
 import io.github.davidsoles.springanalyzer.common.ScanResult;
 import io.github.davidsoles.springanalyzer.common.Version;
 import io.github.davidsoles.springanalyzer.endpoints.Endpoint;
-import io.github.davidsoles.springanalyzer.endpoints.EndpointScanner;
+import io.github.davidsoles.springanalyzer.endpoints.EndpointExtractor;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class EndpointScannerTest {
+class ProjectScannerTest {
 
     private final Path root = Path.of("src/test/resources/fixtures/demo")
             .toAbsolutePath()
@@ -141,11 +142,11 @@ class EndpointScannerTest {
 
     @Test
     void joinsPathsCorrectly() {
-        assertEquals("/api/users", EndpointScanner.joinPaths("/api/users", ""));
-        assertEquals("/api/users/{id}", EndpointScanner.joinPaths("/api/users", "/{id}"));
-        assertEquals("/", EndpointScanner.joinPaths("", ""));
-        assertEquals("/x", EndpointScanner.joinPaths("/", "/x"));
-        assertEquals("/api/x", EndpointScanner.joinPaths("/api/", "/x"));
+        assertEquals("/api/users", EndpointExtractor.joinPaths("/api/users", ""));
+        assertEquals("/api/users/{id}", EndpointExtractor.joinPaths("/api/users", "/{id}"));
+        assertEquals("/", EndpointExtractor.joinPaths("", ""));
+        assertEquals("/x", EndpointExtractor.joinPaths("/", "/x"));
+        assertEquals("/api/x", EndpointExtractor.joinPaths("/api/", "/x"));
     }
 
     @Test
@@ -171,7 +172,7 @@ class EndpointScannerTest {
     }
 
     private ScanResult scan(ScanOptions options) throws IOException {
-        return new EndpointScanner().scan(root, options);
+        return new ProjectScanner().scan(root, options);
     }
 
     private static Endpoint find(ScanResult result, String verb, String path) {

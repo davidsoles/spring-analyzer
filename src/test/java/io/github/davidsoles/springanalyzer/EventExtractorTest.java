@@ -1,10 +1,10 @@
 package io.github.davidsoles.springanalyzer;
 
 import io.github.davidsoles.springanalyzer.common.OutputFormat;
+import io.github.davidsoles.springanalyzer.common.ProjectScanner;
 import io.github.davidsoles.springanalyzer.common.Renderer;
 import io.github.davidsoles.springanalyzer.common.ScanOptions;
 import io.github.davidsoles.springanalyzer.common.ScanResult;
-import io.github.davidsoles.springanalyzer.endpoints.EndpointScanner;
 import io.github.davidsoles.springanalyzer.events.EventInfo;
 import io.github.davidsoles.springanalyzer.events.EventListenerInfo;
 import io.github.davidsoles.springanalyzer.events.EventPublisherInfo;
@@ -25,7 +25,7 @@ class EventExtractorTest {
 
     @Test
     void extractsEventsPublishersAndListeners() throws IOException {
-        ScanResult result = new EndpointScanner().scan(root, ScanOptions.defaults());
+        ScanResult result = new ProjectScanner().scan(root, ScanOptions.defaults());
 
         assertEquals(3, result.events().size());
         assertEquals(4, result.publisherCount());
@@ -50,7 +50,7 @@ class EventExtractorTest {
 
     @Test
     void resolvesPublisherReceiversAndEventTypes() throws IOException {
-        ScanResult result = new EndpointScanner().scan(root, ScanOptions.defaults());
+        ScanResult result = new ProjectScanner().scan(root, ScanOptions.defaults());
         EventInfo created = find(result, "OrderCreatedEvent");
 
         EventPublisherInfo create = findPublisher(created, "OrderService#create");
@@ -77,7 +77,7 @@ class EventExtractorTest {
 
     @Test
     void detectsEventListenerVariants() throws IOException {
-        ScanResult result = new EndpointScanner().scan(root, ScanOptions.defaults());
+        ScanResult result = new ProjectScanner().scan(root, ScanOptions.defaults());
         EventInfo created = find(result, "OrderCreatedEvent");
 
         assertTrue(hasListener(created, "OrderListener#onCreated"));
@@ -98,7 +98,7 @@ class EventExtractorTest {
 
     @Test
     void includesEventsInJsonOutput() throws IOException {
-        ScanResult result = new EndpointScanner().scan(root, ScanOptions.defaults());
+        ScanResult result = new ProjectScanner().scan(root, ScanOptions.defaults());
         String json = Renderer.render(result, OutputFormat.JSON);
 
         assertTrue(json.contains("\"schemaVersion\": 2"));
@@ -110,7 +110,7 @@ class EventExtractorTest {
 
     @Test
     void rendersEventTreeTable() throws IOException {
-        ScanResult result = new EndpointScanner().scan(root, ScanOptions.defaults());
+        ScanResult result = new ProjectScanner().scan(root, ScanOptions.defaults());
         String table = Renderer.render(result, OutputFormat.TABLE, true);
 
         assertTrue(table.contains("EVENT"));

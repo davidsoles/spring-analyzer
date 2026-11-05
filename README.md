@@ -259,17 +259,19 @@ The source code is organized by feature:
 ```text
 src/main/java/io/github/davidsoles/springanalyzer/
 ├── Main.java                 # CLI entry point
-├── common/                   # Shared models, index, rendering, version
+├── common/                   # Shared scanner, models, index, rendering
 │   ├── OutputFormat.java
+│   ├── ProjectScanner.java
 │   ├── Renderer.java
 │   ├── ScanOptions.java
 │   ├── ScanResult.java
+│   ├── SourceFiles.java
 │   ├── SourceIndex.java
 │   └── Version.java
 ├── endpoints/                # REST endpoint analysis
 │   ├── ConstantResolver.java
 │   ├── Endpoint.java
-│   └── EndpointScanner.java
+│   └── EndpointExtractor.java
 └── events/                   # Spring event analysis
     ├── EventExtractor.java
     ├── EventInfo.java
