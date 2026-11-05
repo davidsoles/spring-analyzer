@@ -1,9 +1,9 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.endpoints;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParseResult;
-import com.github.javaparser.ParserConfiguration;
-import com.github.javaparser.Problem;
+import io.github.davidsoles.springanalyzer.common.ScanOptions;
+import io.github.davidsoles.springanalyzer.common.SourceFiles;
+import io.github.davidsoles.springanalyzer.common.SourceIndex;
+
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.AnnotationDeclaration;
@@ -18,27 +18,20 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
- * Scans a Java/Spring Boot repository and extracts REST endpoints declared with
- * Spring MVC annotations.
+ * Extracts REST endpoints from Spring MVC controllers.
  */
-public final class EndpointScanner {
+public final class EndpointExtractor {
 
     private static final Set<String> DIRECT_MAPPINGS = Set.of(
             "RequestMapping",
@@ -48,77 +41,23 @@ public final class EndpointScanner {
             "PatchMapping",
             "DeleteMapping");
 
-    private static final Set<String> EXCLUDED_DIRS = Set.of(
-            ".git",
-            ".idea",
-            ".vscode",
-            ".gradle",
-            "node_modules",
-            "target",
-            "build",
-            "out");
+    private final SourceIndex index;
+    private final ConstantResolver resolver;
+    private final Path root;
+    private final ScanOptions options;
 
-    private Path root;
-    private ScanOptions options;
-    private SourceIndex index;
-    private ConstantResolver resolver;
-    private Set<String> warnings;
-
-    public ScanResult scan(Path root, ScanOptions options) throws IOException {
-        Path absoluteRoot = root.toAbsolutePath().normalize();
-        if (!Files.isDirectory(absoluteRoot)) {
-            throw new IllegalArgumentException("Directory does not exist: " + absoluteRoot);
-        }
-
-        this.root = absoluteRoot;
-        this.options = options;
-        this.warnings = new LinkedHashSet<>();
-
-        JavaParser parser = new JavaParser(new ParserConfiguration()
-                .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_25)
-                .setCharacterEncoding(StandardCharsets.UTF_8));
-
-        List<SourceIndex.UnitInfo> units = new ArrayList<>();
-        int filesScanned = 0;
-
-        try (Stream<Path> stream = Files.walk(absoluteRoot)) {
-            List<Path> files = stream
-                    .filter(Files::isRegularFile)
-                    .filter(this::shouldScan)
-                    .sorted()
-                    .toList();
-
-            for (Path file : files) {
-                try {
-                    ParseResult<CompilationUnit> result = parser.parse(file);
-                    if (result.getResult().isEmpty()) {
-                        warnings.add("Could not parse " + displayFile(file) + ": " + problems(result));
-                        continue;
-                    }
-                    if (!result.isSuccessful()) {
-                        warnings.add("Problems while parsing " + displayFile(file) + ": " + problems(result));
-                    }
-                    units.add(new SourceIndex.UnitInfo(file, result.getResult().get()));
-                    filesScanned++;
-                } catch (Exception e) {
-                    warnings.add("Could not read " + displayFile(file) + ": " + e.getMessage());
-                }
-            }
-        }
-
-        this.index = new SourceIndex();
-        units.forEach(index::add);
+    public EndpointExtractor(
+            SourceIndex index,
+            Set<String> warnings,
+            Path root,
+            ScanOptions options) {
+        this.index = index;
         this.resolver = new ConstantResolver(index, warnings);
-
-        List<Endpoint> endpoints = extractEndpoints();
-        endpoints.sort(Comparator.comparing(Endpoint::path)
-                .thenComparing(Endpoint::httpMethod)
-                .thenComparing(Endpoint::handler));
-
-        return new ScanResult(endpoints, List.copyOf(warnings), filesScanned);
+        this.root = root;
+        this.options = options;
     }
 
-    private List<Endpoint> extractEndpoints() {
+    public List<Endpoint> extract() {
         List<Endpoint> endpoints = new ArrayList<>();
         Set<String> seen = new HashSet<>();
 
@@ -475,7 +414,7 @@ public final class EndpointScanner {
         return mapping.paths().isEmpty() ? List.of("") : mapping.paths();
     }
 
-    static String joinPaths(String base, String path) {
+    public static String joinPaths(String base, String path) {
         String normalizedBase = base == null ? "" : base;
         String normalizedPath = path == null ? "" : path;
 
@@ -495,43 +434,8 @@ public final class EndpointScanner {
                 + endpoint.controllerFqn() + "|" + endpoint.methodName();
     }
 
-    private boolean shouldScan(Path file) {
-        String relative = relative(file);
-        if (!relative.endsWith(".java")) {
-            return false;
-        }
-
-        for (String part : relative.split("/")) {
-            if (EXCLUDED_DIRS.contains(part)) {
-                return false;
-            }
-        }
-
-        if (!options.includeTests()) {
-            return !relative.startsWith("src/test/")
-                    && !relative.contains("/src/test/")
-                    && !relative.startsWith("src/integrationTest/")
-                    && !relative.contains("/src/integrationTest/")
-                    && !relative.startsWith("src/testFixtures/")
-                    && !relative.contains("/src/testFixtures/");
-        }
-        return true;
-    }
-
-    private String relative(Path file) {
-        return root.relativize(file).toString().replace('\\', '/');
-    }
-
     private String displayFile(Path file) {
-        return options.absolutePaths() ? file.toString().replace('\\', '/') : relative(file);
-    }
-
-    private static String problems(ParseResult<?> result) {
-        String message = result.getProblems().stream()
-                .limit(3)
-                .map(Problem::getMessage)
-                .collect(Collectors.joining("; "));
-        return message.isEmpty() ? "unknown error" : message;
+        return SourceFiles.display(root, options, file);
     }
 
     private record MethodRef(MethodDeclaration method, SourceIndex.TypeInfo declaringType) {

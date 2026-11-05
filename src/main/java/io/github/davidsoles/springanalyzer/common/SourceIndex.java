@@ -1,4 +1,4 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.common;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -31,12 +31,12 @@ import java.util.Set;
  * Index of all parsed files: types, hierarchy, annotations, and String constants.
  * It is built in a first pass so references across files can be resolved.
  */
-final class SourceIndex {
+public final class SourceIndex {
 
-    record UnitInfo(Path file, CompilationUnit unit) {
+    public record UnitInfo(Path file, CompilationUnit unit) {
     }
 
-    record TypeInfo(String fqn, String simpleName, TypeDeclaration<?> declaration, UnitInfo unit) {
+    public record TypeInfo(String fqn, String simpleName, TypeDeclaration<?> declaration, UnitInfo unit) {
     }
 
     private final Map<String, TypeInfo> typesByFqn = new LinkedHashMap<>();
@@ -45,7 +45,7 @@ final class SourceIndex {
     private final Map<String, Expression> constants = new LinkedHashMap<>();
     private final Set<String> ambiguousConstants = new HashSet<>();
 
-    void add(UnitInfo unitInfo) {
+    public void add(UnitInfo unitInfo) {
         String packageName = unitInfo.unit().getPackageDeclaration()
                 .map(pd -> pd.getNameAsString())
                 .orElse("");
@@ -109,11 +109,15 @@ final class SourceIndex {
         }
     }
 
-    Collection<TypeInfo> types() {
+    public Collection<TypeInfo> types() {
         return typesByFqn.values();
     }
 
-    Optional<Expression> constant(String key) {
+    public TypeInfo byFqn(String fqn) {
+        return typesByFqn.get(fqn);
+    }
+
+    public Optional<Expression> constant(String key) {
         if (ambiguousConstants.contains(key)) {
             return Optional.empty();
         }
@@ -135,7 +139,7 @@ final class SourceIndex {
         return Optional.empty();
     }
 
-    boolean isAmbiguousConstant(String key) {
+    public boolean isAmbiguousConstant(String key) {
         if (ambiguousConstants.contains(key)) {
             return true;
         }
@@ -146,7 +150,7 @@ final class SourceIndex {
         return ambiguousConstants.contains(simpleName(key.substring(0, dot)) + "." + key.substring(dot + 1));
     }
 
-    List<AnnotationDeclaration> annotationDeclarations(CompilationUnit unit, String name) {
+    public List<AnnotationDeclaration> annotationDeclarations(CompilationUnit unit, String name) {
         String fqn = resolveTypeName(unit, name);
         TypeInfo info = typesByFqn.get(fqn);
         if (info != null) {
@@ -160,7 +164,7 @@ final class SourceIndex {
         return candidates == null ? List.of() : candidates;
     }
 
-    TypeInfo resolveType(CompilationUnit unit, String name) {
+    public TypeInfo resolveType(CompilationUnit unit, String name) {
         String fqn = resolveTypeName(unit, name);
         TypeInfo byFqn = typesByFqn.get(fqn);
         if (byFqn != null) {
@@ -174,7 +178,7 @@ final class SourceIndex {
         return null;
     }
 
-    String resolveTypeName(CompilationUnit unit, String name) {
+    public String resolveTypeName(CompilationUnit unit, String name) {
         if (typesByFqn.containsKey(name)) {
             return name;
         }
@@ -231,7 +235,7 @@ final class SourceIndex {
         return name;
     }
 
-    List<TypeInfo> hierarchy(TypeInfo type) {
+    public List<TypeInfo> hierarchy(TypeInfo type) {
         Map<String, TypeInfo> result = new LinkedHashMap<>();
         Deque<TypeInfo> queue = new ArrayDeque<>();
         queue.add(type);
@@ -270,7 +274,7 @@ final class SourceIndex {
         return result;
     }
 
-    static String simpleName(String name) {
+    public static String simpleName(String name) {
         int dot = name.lastIndexOf('.');
         return dot < 0 ? name : name.substring(dot + 1);
     }

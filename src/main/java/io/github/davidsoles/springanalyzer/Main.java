@@ -1,5 +1,12 @@
 package io.github.davidsoles.springanalyzer;
 
+import io.github.davidsoles.springanalyzer.common.OutputFormat;
+import io.github.davidsoles.springanalyzer.common.ProjectScanner;
+import io.github.davidsoles.springanalyzer.common.Renderer;
+import io.github.davidsoles.springanalyzer.common.ScanOptions;
+import io.github.davidsoles.springanalyzer.common.ScanResult;
+import io.github.davidsoles.springanalyzer.common.Version;
+
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,14 +41,14 @@ public final class Main {
         }
 
         try {
-            ScanResult result = new EndpointScanner().scan(
+            ScanResult result = new ProjectScanner().scan(
                     cli.root(),
                     new ScanOptions(
                             cli.includeTests(),
                             cli.includeMvcControllers(),
                             cli.absolutePaths()));
 
-            String rendered = Renderer.render(result, cli.format());
+            String rendered = Renderer.render(result, cli.format(), cli.events());
 
             if (cli.output() != null) {
                 Path target = cli.output().toAbsolutePath().normalize();
@@ -78,6 +85,7 @@ public final class Main {
         boolean includeTests = false;
         boolean includeMvc = false;
         boolean absolutePaths = false;
+        boolean events = false;
         boolean verbose = false;
         OutputFormat format = OutputFormat.TABLE;
         Path output = null;
@@ -99,6 +107,7 @@ public final class Main {
                 case "--include-tests" -> includeTests = true;
                 case "--include-mvc" -> includeMvc = true;
                 case "--absolute-paths" -> absolutePaths = true;
+                case "--events" -> events = true;
                 case "-v", "--verbose" -> verbose = true;
                 case "-f", "--format" -> format = parseFormat(requireValue(args, ++i, argument));
                 case "-o", "--output" -> output = Path.of(requireValue(args, ++i, argument));
@@ -125,7 +134,7 @@ public final class Main {
         }
 
         Path root = positional.isEmpty() ? Path.of(".") : Path.of(positional.get(0));
-        return new CliOptions(root, format, output, includeTests, includeMvc, absolutePaths, verbose, help, version);
+        return new CliOptions(root, format, output, includeTests, includeMvc, absolutePaths, events, verbose, help, version);
     }
 
     private static OutputFormat parseFormat(String value) {
@@ -147,7 +156,7 @@ public final class Main {
         output.println("""
                 Usage: java -jar spring-analyzer.jar [options] [repository-path]
 
-                Static analysis for Spring Boot: list REST endpoints and link them to source.
+                Static analysis for Spring Boot: list REST endpoints and application events.
 
                 Options:
                   -f, --format <table|json|csv>  Output format (default: table)
@@ -155,6 +164,7 @@ public final class Main {
                       --include-tests            Include src/test and similar directories
                       --include-mvc              Include @Controller methods without @ResponseBody
                       --absolute-paths           Show absolute file paths
+                      --events                   Show the event graph instead of endpoints
                   -v, --verbose                  Show warnings and statistics
                   -h, --help                     Show this help
                       --version                  Show the version
@@ -170,6 +180,7 @@ public final class Main {
             boolean includeTests,
             boolean includeMvcControllers,
             boolean absolutePaths,
+            boolean events,
             boolean verbose,
             boolean help,
             boolean version) {

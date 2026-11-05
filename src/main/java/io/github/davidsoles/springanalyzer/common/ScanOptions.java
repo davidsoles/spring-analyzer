@@ -1,4 +1,4 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.common;
 
 /**
  * Scan options.

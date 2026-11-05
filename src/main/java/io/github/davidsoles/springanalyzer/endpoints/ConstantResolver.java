@@ -1,4 +1,6 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.endpoints;
+
+import io.github.davidsoles.springanalyzer.common.SourceIndex;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
