@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Planned
 
-- `@EventListener` publisher/subscriber extraction
-- Event relationship graph
 - Scheduled task extraction
+- Component wiring analysis
+- Additional output formats
 
 ## [1.1.0] - 2026-11-04
 
