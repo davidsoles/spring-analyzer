@@ -1,5 +1,6 @@
 package io.github.davidsoles.springanalyzer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -10,10 +11,14 @@ public final class Renderer {
     }
 
     public static String render(ScanResult result, OutputFormat format) {
+        return render(result, format, false);
+    }
+
+    public static String render(ScanResult result, OutputFormat format, boolean events) {
         return switch (format) {
-            case TABLE -> table(result);
+            case TABLE -> events ? eventTable(result) : table(result);
             case JSON -> json(result);
-            case CSV -> csv(result.endpoints());
+            case CSV -> events ? eventCsv(result) : csv(result.endpoints());
         };
     }
 
@@ -63,6 +68,7 @@ public final class Renderer {
         output.append('\n')
                 .append(endpoints.size()).append(" endpoints | ")
                 .append(result.controllerCount()).append(" controllers | ")
+                .append(result.eventCount()).append(" events | ")
                 .append(result.filesScanned()).append(" Java files\n");
 
         if (!result.warnings().isEmpty()) {
@@ -71,6 +77,92 @@ public final class Renderer {
         }
 
         return output.toString();
+    }
+
+    private static String eventTable(ScanResult result) {
+        List<EventRow> rows = eventRows(result);
+
+        int eventWidth = Math.max(5, rows.stream()
+                .mapToInt(row -> row.event().length())
+                .max()
+                .orElse(5));
+        int roleWidth = Math.max(7, rows.stream()
+                .mapToInt(row -> row.role().length())
+                .max()
+                .orElse(7));
+        int handlerWidth = Math.min(52, Math.max(7, rows.stream()
+                .mapToInt(row -> row.handler().length())
+                .max()
+                .orElse(7)));
+        int sourceWidth = Math.min(80, Math.max(6, rows.stream()
+                .mapToInt(row -> row.source().length())
+                .max()
+                .orElse(6)));
+
+        String rowFormat = "%-" + eventWidth + "s  %-" + roleWidth + "s  %-"
+                + handlerWidth + "s  %-" + sourceWidth + "s%n";
+
+        StringBuilder output = new StringBuilder();
+        output.append(String.format(Locale.ROOT, rowFormat, "EVENT", "ROLE", "HANDLER", "SOURCE"));
+        output.append(String.format(Locale.ROOT, rowFormat,
+                "-".repeat(eventWidth),
+                "-".repeat(roleWidth),
+                "-".repeat(handlerWidth),
+                "-".repeat(sourceWidth)));
+
+        for (EventRow row : rows) {
+            output.append(String.format(Locale.ROOT, rowFormat,
+                    truncate(row.event(), eventWidth),
+                    truncate(row.role(), roleWidth),
+                    truncate(row.handler(), handlerWidth),
+                    truncate(row.source(), sourceWidth)));
+        }
+
+        if (rows.isEmpty()) {
+            output.append("(no events found)\n");
+        }
+
+        output.append('\n')
+                .append(result.eventCount()).append(" events | ")
+                .append(result.publisherCount()).append(" publishers | ")
+                .append(result.listenerCount()).append(" listeners | ")
+                .append(result.filesScanned()).append(" Java files\n");
+
+        if (!result.warnings().isEmpty()) {
+            output.append(result.warnings().size())
+                    .append(" warnings (use --verbose to view them)\n");
+        }
+
+        return output.toString();
+    }
+
+    private static List<EventRow> eventRows(ScanResult result) {
+        List<EventRow> rows = new ArrayList<>();
+
+        for (EventInfo event : result.events()) {
+            String declaration = event.file().isEmpty()
+                    ? ""
+                    : event.file() + ":" + event.line();
+            rows.add(new EventRow(event.eventSimpleName(), "EVENT", "", declaration));
+
+            for (EventPublisherInfo publisher : event.publishers()) {
+                rows.add(new EventRow(
+                        event.eventSimpleName(),
+                        "PUBLISH",
+                        publisher.handler(),
+                        publisher.file() + ":" + publisher.line()));
+            }
+
+            for (EventListenerInfo listener : event.listeners()) {
+                rows.add(new EventRow(
+                        event.eventSimpleName(),
+                        "LISTEN",
+                        listener.handler(),
+                        listener.file() + ":" + listener.line()));
+            }
+        }
+
+        return rows;
     }
 
     private static String source(Endpoint endpoint) {
@@ -90,7 +182,7 @@ public final class Renderer {
     private static String json(ScanResult result) {
         StringBuilder output = new StringBuilder();
         output.append("{\n")
-                .append("  \"schemaVersion\": 1,\n")
+                .append("  \"schemaVersion\": 2,\n")
                 .append("  \"scannerVersion\": ").append(jsonString(Version.VERSION)).append(",\n")
                 .append("  \"endpoints\": [\n");
 
@@ -118,6 +210,70 @@ public final class Renderer {
             output.append('\n');
         }
 
+        output.append("  ],\n")
+                .append("  \"events\": [\n");
+
+        List<EventInfo> events = result.events();
+        for (int i = 0; i < events.size(); i++) {
+            EventInfo event = events.get(i);
+            output.append("    {\n")
+                    .append("      \"eventType\": ").append(jsonString(event.eventType())).append(",\n")
+                    .append("      \"eventSimpleName\": ").append(jsonString(event.eventSimpleName())).append(",\n")
+                    .append("      \"declaredIn\": ").append(jsonString(event.declaredIn())).append(",\n")
+                    .append("      \"file\": ").append(jsonString(event.file())).append(",\n")
+                    .append("      \"line\": ").append(event.line()).append(",\n")
+                    .append("      \"publishers\": [\n");
+
+            for (int j = 0; j < event.publishers().size(); j++) {
+                EventPublisherInfo publisher = event.publishers().get(j);
+                output.append("        {\n")
+                        .append("          \"handler\": ").append(jsonString(publisher.handler())).append(",\n")
+                        .append("          \"classFqn\": ").append(jsonString(publisher.classFqn())).append(",\n")
+                        .append("          \"methodName\": ").append(jsonString(publisher.methodName())).append(",\n")
+                        .append("          \"expression\": ").append(jsonString(publisher.expression())).append(",\n")
+                        .append("          \"receiver\": ").append(jsonString(publisher.receiver())).append(",\n")
+                        .append("          \"receiverType\": ").append(jsonString(publisher.receiverType())).append(",\n")
+                        .append("          \"confidence\": ").append(jsonString(publisher.confidence())).append(",\n")
+                        .append("          \"file\": ").append(jsonString(publisher.file())).append(",\n")
+                        .append("          \"line\": ").append(publisher.line()).append(",\n")
+                        .append("          \"methodLine\": ").append(publisher.methodLine()).append("\n")
+                        .append("        }");
+                if (j + 1 < event.publishers().size()) {
+                    output.append(',');
+                }
+                output.append('\n');
+            }
+
+            output.append("      ],\n")
+                    .append("      \"listeners\": [\n");
+
+            for (int j = 0; j < event.listeners().size(); j++) {
+                EventListenerInfo listener = event.listeners().get(j);
+                output.append("        {\n")
+                        .append("          \"handler\": ").append(jsonString(listener.handler())).append(",\n")
+                        .append("          \"classFqn\": ").append(jsonString(listener.classFqn())).append(",\n")
+                        .append("          \"methodName\": ").append(jsonString(listener.methodName())).append(",\n")
+                        .append("          \"declaredIn\": ").append(jsonString(listener.declaredIn())).append(",\n")
+                        .append("          \"annotation\": ").append(jsonString(listener.annotation())).append(",\n")
+                        .append("          \"condition\": ").append(jsonString(listener.condition())).append(",\n")
+                        .append("          \"file\": ").append(jsonString(listener.file())).append(",\n")
+                        .append("          \"line\": ").append(listener.line()).append(",\n")
+                        .append("          \"methodLine\": ").append(listener.methodLine()).append("\n")
+                        .append("        }");
+                if (j + 1 < event.listeners().size()) {
+                    output.append(',');
+                }
+                output.append('\n');
+            }
+
+            output.append("      ]\n")
+                    .append("    }");
+            if (i + 1 < events.size()) {
+                output.append(',');
+            }
+            output.append('\n');
+        }
+
         output.append("  ]\n").append("}\n");
         return output.toString();
     }
@@ -129,9 +285,10 @@ public final class Renderer {
     }
 
     private static String jsonString(String value) {
+        String text = value == null ? "" : value;
         StringBuilder output = new StringBuilder("\"");
-        for (int i = 0; i < value.length(); i++) {
-            char character = value.charAt(i);
+        for (int i = 0; i < text.length(); i++) {
+            char character = text.charAt(i);
             switch (character) {
                 case '"' -> output.append("\\\"");
                 case '\\' -> output.append("\\\\");
@@ -175,7 +332,69 @@ public final class Renderer {
         return output.toString();
     }
 
+    private static String eventCsv(ScanResult result) {
+        StringBuilder output = new StringBuilder();
+        output.append("event,role,handler,class_fqn,method,expression,receiver,"
+                + "receiver_type,confidence,file,line,method_line,annotation,condition\n");
+
+        for (EventInfo event : result.events()) {
+            output.append(csvField(event.eventSimpleName())).append(',')
+                    .append(csvField("EVENT")).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField(event.declaredIn())).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField(event.file())).append(',')
+                    .append(event.line()).append(',')
+                    .append(-1).append(',')
+                    .append(csvField("")).append(',')
+                    .append(csvField("")).append('\n');
+
+            for (EventPublisherInfo publisher : event.publishers()) {
+                output.append(csvField(event.eventSimpleName())).append(',')
+                        .append(csvField("PUBLISH")).append(',')
+                        .append(csvField(publisher.handler())).append(',')
+                        .append(csvField(publisher.classFqn())).append(',')
+                        .append(csvField(publisher.methodName())).append(',')
+                        .append(csvField(publisher.expression())).append(',')
+                        .append(csvField(publisher.receiver())).append(',')
+                        .append(csvField(publisher.receiverType())).append(',')
+                        .append(csvField(publisher.confidence())).append(',')
+                        .append(csvField(publisher.file())).append(',')
+                        .append(publisher.line()).append(',')
+                        .append(publisher.methodLine()).append(',')
+                        .append(csvField("")).append(',')
+                        .append(csvField("")).append('\n');
+            }
+
+            for (EventListenerInfo listener : event.listeners()) {
+                output.append(csvField(event.eventSimpleName())).append(',')
+                        .append(csvField("LISTEN")).append(',')
+                        .append(csvField(listener.handler())).append(',')
+                        .append(csvField(listener.classFqn())).append(',')
+                        .append(csvField(listener.methodName())).append(',')
+                        .append(csvField("")).append(',')
+                        .append(csvField("")).append(',')
+                        .append(csvField("")).append(',')
+                        .append(csvField("")).append(',')
+                        .append(csvField(listener.file())).append(',')
+                        .append(listener.line()).append(',')
+                        .append(listener.methodLine()).append(',')
+                        .append(csvField(listener.annotation())).append(',')
+                        .append(csvField(listener.condition())).append('\n');
+            }
+        }
+
+        return output.toString();
+    }
+
     private static String csvField(String value) {
-        return "\"" + value.replace("\"", "\"\"") + "\"";
+        return "\"" + (value == null ? "" : value).replace("\"", "\"\"") + "\"";
+    }
+
+    private record EventRow(String event, String role, String handler, String source) {
     }
 }

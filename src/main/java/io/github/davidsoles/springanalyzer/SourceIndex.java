@@ -113,6 +113,10 @@ final class SourceIndex {
         return typesByFqn.values();
     }
 
+    TypeInfo byFqn(String fqn) {
+        return typesByFqn.get(fqn);
+    }
+
     Optional<Expression> constant(String key) {
         if (ambiguousConstants.contains(key)) {
             return Optional.empty();

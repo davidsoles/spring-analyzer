@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Event relationship graph
 - Scheduled task extraction
 
+## [1.1.0] - 2026-11-04
+
+### Added
+
+- Spring event extraction: `@EventListener`, `@TransactionalEventListener`,
+  composed listener annotations, and `ApplicationEvent` subclasses.
+- Event publisher detection for `publishEvent` and `multicastEvent`, including
+  constructor/field-typed receivers and event factory return types.
+- Event graph output with publishers and listeners grouped by event type.
+- `--events` table and CSV output.
+- JSON schema version 2 with an `events` array.
+
 ## [1.0.0] - 2026-11-04
 
 ### Added

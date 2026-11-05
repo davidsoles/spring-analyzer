@@ -151,7 +151,7 @@ class EndpointScannerTest {
 
         String json = Renderer.render(result, OutputFormat.JSON);
         assertTrue(json.startsWith("{\n"));
-        assertTrue(json.contains("\"schemaVersion\": 1"));
+        assertTrue(json.contains("\"schemaVersion\": 2"));
         assertTrue(json.contains("\"scannerVersion\": \"" + Version.VERSION + "\""));
         assertTrue(json.contains("\"endpoints\": ["));
         assertTrue(json.contains("\"path\": \"/api/users\""));

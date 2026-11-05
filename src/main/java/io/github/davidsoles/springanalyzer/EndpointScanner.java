@@ -115,7 +115,9 @@ public final class EndpointScanner {
                 .thenComparing(Endpoint::httpMethod)
                 .thenComparing(Endpoint::handler));
 
-        return new ScanResult(endpoints, List.copyOf(warnings), filesScanned);
+        List<EventInfo> events = new EventExtractor(index, warnings, this.root, options).extract();
+
+        return new ScanResult(endpoints, events, List.copyOf(warnings), filesScanned);
     }
 
     private List<Endpoint> extractEndpoints() {
