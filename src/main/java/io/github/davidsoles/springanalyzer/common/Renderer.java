@@ -148,7 +148,11 @@ public final class Renderer {
             String declaration = event.file().isEmpty()
                     ? ""
                     : event.file() + ":" + event.line();
-            rows.add(new EventRow(event.eventSimpleName(), "EVENT", "", declaration));
+            rows.add(new EventRow(
+                    event.eventSimpleName(),
+                    "EVENT",
+                    publisherOriginLabel(event),
+                    declaration));
 
             for (EventPublisherInfo publisher : event.publishers()) {
                 rows.add(new EventRow(
@@ -168,6 +172,15 @@ public final class Renderer {
         }
 
         return rows;
+    }
+
+    private static String publisherOriginLabel(EventInfo event) {
+        return switch (event.publisherOrigin()) {
+            case "framework" -> "Spring Boot lifecycle";
+            case "external" -> "external publisher";
+            case "none" -> "no publisher";
+            default -> "";
+        };
     }
 
     private static String source(Endpoint endpoint) {
@@ -227,6 +240,7 @@ public final class Renderer {
                     .append("      \"declaredIn\": ").append(jsonString(event.declaredIn())).append(",\n")
                     .append("      \"file\": ").append(jsonString(event.file())).append(",\n")
                     .append("      \"line\": ").append(event.line()).append(",\n")
+                    .append("      \"publisherOrigin\": ").append(jsonString(event.publisherOrigin())).append(",\n")
                     .append("      \"publishers\": [\n");
 
             for (int j = 0; j < event.publishers().size(); j++) {
@@ -340,7 +354,8 @@ public final class Renderer {
     private static String eventCsv(ScanResult result) {
         StringBuilder output = new StringBuilder();
         output.append("event,role,handler,class_fqn,method,expression,receiver,"
-                + "receiver_type,confidence,file,line,method_line,annotation,condition\n");
+                + "receiver_type,confidence,file,line,method_line,annotation,condition,"
+                + "publisher_origin\n");
 
         for (EventInfo event : result.events()) {
             output.append(csvField(event.eventSimpleName())).append(',')
@@ -356,7 +371,8 @@ public final class Renderer {
                     .append(event.line()).append(',')
                     .append(-1).append(',')
                     .append(csvField("")).append(',')
-                    .append(csvField("")).append('\n');
+                    .append(csvField("")).append(',')
+                    .append(csvField(event.publisherOrigin())).append('\n');
 
             for (EventPublisherInfo publisher : event.publishers()) {
                 output.append(csvField(event.eventSimpleName())).append(',')
@@ -372,7 +388,8 @@ public final class Renderer {
                         .append(publisher.line()).append(',')
                         .append(publisher.methodLine()).append(',')
                         .append(csvField("")).append(',')
-                        .append(csvField("")).append('\n');
+                        .append(csvField("")).append(',')
+                        .append(csvField(event.publisherOrigin())).append('\n');
             }
 
             for (EventListenerInfo listener : event.listeners()) {
@@ -389,7 +406,8 @@ public final class Renderer {
                         .append(listener.line()).append(',')
                         .append(listener.methodLine()).append(',')
                         .append(csvField(listener.annotation())).append(',')
-                        .append(csvField(listener.condition())).append('\n');
+                        .append(csvField(listener.condition())).append(',')
+                        .append(csvField(event.publisherOrigin())).append('\n');
             }
         }
 

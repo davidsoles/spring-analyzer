@@ -10,6 +10,7 @@ import java.util.List;
  * @param declaredIn      type where the event class is declared, if found in the repository
  * @param file            source file of the event class, if found
  * @param line            line of the event class declaration, or -1
+ * @param publisherOrigin application | framework | external | none
  * @param publishers      places where the event is published
  * @param listeners       methods that listen for the event
  */
@@ -19,6 +20,7 @@ public record EventInfo(
         String declaredIn,
         String file,
         int line,
+        String publisherOrigin,
         List<EventPublisherInfo> publishers,
         List<EventListenerInfo> listeners) {
 
