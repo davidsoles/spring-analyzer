@@ -1,4 +1,10 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.endpoints;
+
+import io.github.davidsoles.springanalyzer.common.ScanOptions;
+import io.github.davidsoles.springanalyzer.common.ScanResult;
+import io.github.davidsoles.springanalyzer.common.SourceIndex;
+import io.github.davidsoles.springanalyzer.events.EventExtractor;
+import io.github.davidsoles.springanalyzer.events.EventInfo;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
@@ -477,7 +483,7 @@ public final class EndpointScanner {
         return mapping.paths().isEmpty() ? List.of("") : mapping.paths();
     }
 
-    static String joinPaths(String base, String path) {
+    public static String joinPaths(String base, String path) {
         String normalizedBase = base == null ? "" : base;
         String normalizedPath = path == null ? "" : path;
 

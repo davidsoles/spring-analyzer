@@ -1,4 +1,4 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.events;
 
 /**
  * A place where a Spring event is published.

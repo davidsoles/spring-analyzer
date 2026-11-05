@@ -252,6 +252,31 @@ classpath, so results can differ from runtime mappings:
 - Publisher detection can be name-only when the receiver type cannot be resolved;
   synchronous and asynchronous listeners are treated the same.
 
+## Project layout
+
+The source code is organized by feature:
+
+```text
+src/main/java/io/github/davidsoles/springanalyzer/
+├── Main.java                 # CLI entry point
+├── common/                   # Shared models, index, rendering, version
+│   ├── OutputFormat.java
+│   ├── Renderer.java
+│   ├── ScanOptions.java
+│   ├── ScanResult.java
+│   ├── SourceIndex.java
+│   └── Version.java
+├── endpoints/                # REST endpoint analysis
+│   ├── ConstantResolver.java
+│   ├── Endpoint.java
+│   └── EndpointScanner.java
+└── events/                   # Spring event analysis
+    ├── EventExtractor.java
+    ├── EventInfo.java
+    ├── EventListenerInfo.java
+    └── EventPublisherInfo.java
+```
+
 ## Development
 
 ```bash

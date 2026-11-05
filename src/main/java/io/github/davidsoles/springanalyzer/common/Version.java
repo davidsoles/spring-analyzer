@@ -1,4 +1,4 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.common;
 
 /**
  * Version information shared by the CLI and the JSON renderer.

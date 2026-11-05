@@ -1,4 +1,9 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.common;
+
+import io.github.davidsoles.springanalyzer.endpoints.Endpoint;
+import io.github.davidsoles.springanalyzer.events.EventInfo;
+import io.github.davidsoles.springanalyzer.events.EventListenerInfo;
+import io.github.davidsoles.springanalyzer.events.EventPublisherInfo;
 
 import java.util.ArrayList;
 import java.util.List;

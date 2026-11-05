@@ -1,4 +1,4 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.events;
 
 /**
  * A method that listens for a Spring event.

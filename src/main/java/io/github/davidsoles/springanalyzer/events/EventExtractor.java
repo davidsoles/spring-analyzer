@@ -1,4 +1,7 @@
-package io.github.davidsoles.springanalyzer;
+package io.github.davidsoles.springanalyzer.events;
+
+import io.github.davidsoles.springanalyzer.common.ScanOptions;
+import io.github.davidsoles.springanalyzer.common.SourceIndex;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
@@ -54,7 +57,7 @@ import java.util.stream.Collectors;
  * publisher using a simple name can still be linked to a listener using an
  * imported fully qualified name.</p>
  */
-final class EventExtractor {
+public final class EventExtractor {
 
     private static final Set<String> PUBLISHER_TYPES = Set.of(
             "ApplicationEventPublisher",
@@ -68,14 +71,14 @@ final class EventExtractor {
     private final ScanOptions options;
     private final Map<String, EventBuilder> events = new LinkedHashMap<>();
 
-    EventExtractor(SourceIndex index, Set<String> warnings, Path root, ScanOptions options) {
+    public EventExtractor(SourceIndex index, Set<String> warnings, Path root, ScanOptions options) {
         this.index = index;
         this.warnings = warnings;
         this.root = root;
         this.options = options;
     }
 
-    List<EventInfo> extract() {
+    public List<EventInfo> extract() {
         for (SourceIndex.TypeInfo type : index.types()) {
             if (isConcrete(type)) {
                 extractListeners(type);
