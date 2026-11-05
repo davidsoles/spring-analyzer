@@ -6,7 +6,7 @@
 
     <groupId>io.github.davidsoles</groupId>
     <artifactId>spring-analyzer</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <name>SpringAnalyzer</name>
     <description>Static analysis CLI for Spring Boot applications: REST endpoints, events, and wiring.</description>
     <url>https://github.com/davidsoles/spring-analyzer</url>
