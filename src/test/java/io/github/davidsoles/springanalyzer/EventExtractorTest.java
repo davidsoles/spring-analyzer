@@ -27,9 +27,9 @@ class EventExtractorTest {
     void extractsEventsPublishersAndListeners() throws IOException {
         ScanResult result = new ProjectScanner().scan(root, ScanOptions.defaults());
 
-        assertEquals(3, result.events().size());
+        assertEquals(5, result.events().size());
         assertEquals(4, result.publisherCount());
-        assertEquals(6, result.listenerCount());
+        assertEquals(8, result.listenerCount());
 
         EventInfo created = find(result, "OrderCreatedEvent");
         assertEquals("com.example.events.OrderCreatedEvent", created.eventType());
@@ -37,15 +37,30 @@ class EventExtractorTest {
         assertTrue(created.line() > 0);
         assertEquals(3, created.publisherCount());
         assertEquals(4, created.listenerCount());
+        assertEquals("application", created.publisherOrigin());
 
         EventInfo shipped = find(result, "OrderShippedEvent");
         assertEquals(1, shipped.publisherCount());
         assertEquals(2, shipped.listenerCount());
+        assertEquals("application", shipped.publisherOrigin());
 
         EventInfo inventory = find(result, "InventoryAdjustedEvent");
         assertEquals(0, inventory.publisherCount());
         assertEquals(0, inventory.listenerCount());
         assertEquals("com.example.events.InventoryAdjustedEvent", inventory.eventType());
+        assertEquals("none", inventory.publisherOrigin());
+
+        EventInfo lifecycle = find(result, "ApplicationReadyEvent");
+        assertEquals(0, lifecycle.publisherCount());
+        assertEquals(1, lifecycle.listenerCount());
+        assertEquals("framework", lifecycle.publisherOrigin());
+        assertEquals("", lifecycle.declaredIn());
+        assertTrue(hasListener(lifecycle, "LifecycleListener#onReady"));
+
+        EventInfo external = find(result, "ExternalAuditEvent");
+        assertEquals(0, external.publisherCount());
+        assertEquals(1, external.listenerCount());
+        assertEquals("external", external.publisherOrigin());
     }
 
     @Test
@@ -104,6 +119,8 @@ class EventExtractorTest {
         assertTrue(json.contains("\"schemaVersion\": 2"));
         assertTrue(json.contains("\"events\": ["));
         assertTrue(json.contains("\"eventSimpleName\": \"OrderCreatedEvent\""));
+        assertTrue(json.contains("\"publisherOrigin\": \"application\""));
+        assertTrue(json.contains("\"publisherOrigin\": \"framework\""));
         assertTrue(json.contains("\"publishers\": ["));
         assertTrue(json.contains("\"listeners\": ["));
     }
@@ -119,6 +136,7 @@ class EventExtractorTest {
         assertTrue(table.contains("OrderCreatedEvent"));
         assertTrue(table.contains("OrderService#create"));
         assertTrue(table.contains("OrderListener#onCreated"));
+        assertTrue(table.contains("Spring Boot lifecycle"));
     }
 
     private static EventInfo find(ScanResult result, String simpleName) {

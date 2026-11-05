@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Event publisher origin classification: `application`, `framework`, `external`,
+  and `none`.
+- Spring Boot lifecycle events are labeled as `framework` in table/JSON output.
+
 ### Planned
 
 - Scheduled task extraction

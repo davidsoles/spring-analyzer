@@ -66,6 +66,22 @@ public final class EventExtractor {
             "ConfigurableApplicationContext",
             "ApplicationEventMulticaster");
 
+    private static final Set<String> LIFECYCLE_EVENTS = Set.of(
+            "ApplicationStartingEvent",
+            "ApplicationEnvironmentPreparedEvent",
+            "ApplicationContextInitializedEvent",
+            "ApplicationPreparedEvent",
+            "ApplicationStartedEvent",
+            "ApplicationReadyEvent",
+            "ApplicationFailedEvent",
+            "ContextRefreshedEvent",
+            "ContextStartedEvent",
+            "ContextStoppedEvent",
+            "ContextClosedEvent",
+            "WebServerInitializedEvent",
+            "ServletWebServerInitializedEvent",
+            "ReactiveWebServerInitializedEvent");
+
     private final SourceIndex index;
     private final Set<String> warnings;
     private final Path root;
@@ -671,8 +687,22 @@ public final class EventExtractor {
                     declaredIn,
                     file,
                     line,
+                    publisherOrigin(),
                     publishers,
                     listeners);
+        }
+
+        private String publisherOrigin() {
+            if (!publishers.isEmpty()) {
+                return "application";
+            }
+            if (LIFECYCLE_EVENTS.contains(simpleName)) {
+                return "framework";
+            }
+            if (declaredIn.isEmpty()) {
+                return "external";
+            }
+            return "none";
         }
     }
 }

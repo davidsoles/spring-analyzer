@@ -179,6 +179,7 @@ The JSON output always includes the `events` array, grouped by event type:
   "declaredIn": "com.example.events.OrderCreatedEvent",
   "file": "src/main/java/com/example/events/OrderCreatedEvent.java",
   "line": 3,
+  "publisherOrigin": "application",
   "publishers": [
     {
       "handler": "OrderService#create",
@@ -201,6 +202,15 @@ The JSON output always includes the `events` array, grouped by event type:
   ]
 }
 ```
+
+Events without a publisher in the analyzed source are classified as:
+
+- `application`: at least one `publishEvent`/`multicastEvent` call was found.
+- `framework`: a known Spring Boot/Spring lifecycle event, published by the
+  framework itself, e.g. `ApplicationReadyEvent`.
+- `external`: the event class is not declared in the repository and no publisher
+  was found.
+- `none`: the event class is declared in the repository but never published.
 
 ### CSV
 
@@ -235,6 +245,8 @@ declared_in,file,line,method_line,consumes,produces
   - Event types from `new Event(...)`, variables, fields, and event factory return types
   - `ApplicationEvent` subclasses, even when currently unused
   - Publisher confidence (`high` vs `name-only`) and receiver type
+  - Publisher origin: `application`, `framework`, `external`, or `none`
+  - Spring Boot lifecycle events such as `ApplicationReadyEvent`
 
 ## Limitations
 
@@ -251,6 +263,8 @@ classpath, so results can differ from runtime mappings:
   subclasses.
 - Publisher detection can be name-only when the receiver type cannot be resolved;
   synchronous and asynchronous listeners are treated the same.
+- Spring Boot lifecycle events (`ApplicationReadyEvent`, `ContextRefreshedEvent`,
+  etc.) have no publisher in application source; they are labeled as `framework`.
 
 ## Project layout
 
